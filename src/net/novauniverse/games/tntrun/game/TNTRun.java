@@ -223,6 +223,8 @@ public class TNTRun extends MapGame implements Listener {
 			}
 		}, 20L);
 		gameLoop.start();
+		
+		this.sendBeginEvent();
 	}
 	
 	@Override
