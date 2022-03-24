@@ -179,11 +179,10 @@ public class TNTRunMapModule extends MapModule {
 
 	public boolean isFloor(Location location) {
 		for (VectorArea floor : floors) {
-			if (floor.isInside(location.toVector())) {
+			if (floor.isInsideBlock(location.toVector())) {
 				return true;
 			}
 		}
-
 		return false;
 	}
 
