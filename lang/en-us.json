@@ -1,0 +1,7 @@
+{
+	"language_code": "en-us",
+	"language_name": "English",
+	"content": {
+		"nova.tntrun.decay_starts_in": "§6§lThe floor will start decaying under you in %s seconds"
+	}
+}
