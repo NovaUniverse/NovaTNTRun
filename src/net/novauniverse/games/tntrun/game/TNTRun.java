@@ -2,12 +2,21 @@ package net.novauniverse.games.tntrun.game;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Difficulty;
+import org.bukkit.Effect;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Sound;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Firework;
 import org.bukkit.entity.LivingEntity;
@@ -25,7 +34,10 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -47,15 +59,43 @@ public class TNTRun extends MapGame implements Listener {
 	private boolean started;
 	private boolean ended;
 
+	public static final double DOUBLE_JUMP_POWER = 1.0D;
+	public static final double DOUBLE_JUMP_Y = 0.75D;
+
+	public static final int DOUBLE_JUMP_CHARGES = 3;
+
 	private TNTRunMapModule config;
 
 	private Task gameLoop;
+
+	private List<UUID> doubleJumpInProgress;
+
+	private Map<UUID, DoubleJumpCharges> doubleJumpCharges;
+
+	private Task actionbarTask;
 
 	public TNTRun() {
 		super(NovaTNTRun.getInstance());
 		this.started = false;
 		this.ended = false;
 		this.config = null;
+		this.doubleJumpInProgress = new ArrayList<UUID>();
+		this.doubleJumpCharges = new HashMap<>();
+
+		this.actionbarTask = new SimpleTask(NovaTNTRun.getInstance(), new Runnable() {
+			@Override
+			public void run() {
+				Bukkit.getServer().getOnlinePlayers().forEach(player -> {
+					if (players.contains(player.getUniqueId())) {
+						if (doubleJumpCharges.containsKey(player.getUniqueId())) {
+							DoubleJumpCharges charges = doubleJumpCharges.get(player.getUniqueId());
+							String message = ChatColor.GOLD + "" + ChatColor.BOLD + "Double jump charges: " + (charges.hasCharges() ? ChatColor.AQUA : ChatColor.RED) + ChatColor.BOLD + charges.getCharges();
+							NovaCore.getInstance().getActionBar().sendMessage(player, message);
+						}
+					}
+				});
+			}
+		}, 10L);
 	}
 
 	public TNTRunMapModule getConfig() {
@@ -138,7 +178,8 @@ public class TNTRun extends MapGame implements Listener {
 		player.setGameMode(GameMode.SURVIVAL);
 		player.teleport(location);
 
-
+		doubleJumpCharges.put(player.getUniqueId(), new DoubleJumpCharges(DOUBLE_JUMP_CHARGES));
+		
 		new BukkitRunnable() {
 			@Override
 			public void run() {
@@ -179,13 +220,13 @@ public class TNTRun extends MapGame implements Listener {
 
 		List<Player> toTeleport = new ArrayList<Player>();
 
-		for (Player player : Bukkit.getServer().getOnlinePlayers()) {
+		Bukkit.getServer().getOnlinePlayers().forEach(player -> {
 			if (players.contains(player.getUniqueId())) {
 				toTeleport.add(player);
 			} else {
 				tpToSpectator(player);
 			}
-		}
+		});
 
 		Collections.shuffle(toTeleport);
 
@@ -201,8 +242,8 @@ public class TNTRun extends MapGame implements Listener {
 
 			if (toUse.size() == 0) {
 				// Could not load spawn locations. break out to prevent server from crashing
-				Log.fatal("Spleef", "The map " + this.getActiveMap().getMapData().getMapName() + " has no spawn locations. Ending game to prevent crash");
-				Bukkit.getServer().broadcastMessage(ChatColor.RED + "Spleef has run into an uncorrectable error and has to be ended");
+				Log.fatal("TNTRun", "The map " + this.getActiveMap().getMapData().getMapName() + " has no spawn locations. Ending game to prevent crash");
+				Bukkit.getServer().broadcastMessage(ChatColor.RED + "TNTRun has run into an uncorrectable error and has to be ended");
 				this.endGame(GameEndReason.ERROR);
 				return;
 			}
@@ -216,17 +257,19 @@ public class TNTRun extends MapGame implements Listener {
 		gameLoop = new SimpleTask(new Runnable() {
 			@Override
 			public void run() {
-				for (Player player : Bukkit.getServer().getOnlinePlayers()) {
+				Bukkit.getServer().getOnlinePlayers().forEach(player -> {
 					player.setFoodLevel(20);
 					player.setSaturation(20);
-				}
+				});
 			}
 		}, 20L);
 		gameLoop.start();
-		
+
+		Task.tryStartTask(actionbarTask);
+
 		this.sendBeginEvent();
 	}
-	
+
 	@Override
 	public void onEnd(GameEndReason reason) {
 		if (ended) {
@@ -235,7 +278,7 @@ public class TNTRun extends MapGame implements Listener {
 
 		Task.tryStopTask(gameLoop);
 
-		for (Location location : getActiveMap().getStarterLocations()) {
+		getActiveMap().getStarterLocations().forEach(location -> {
 			Firework fw = (Firework) location.getWorld().spawnEntity(location, EntityType.FIREWORK);
 			FireworkMeta fwm = fw.getFireworkMeta();
 
@@ -243,16 +286,18 @@ public class TNTRun extends MapGame implements Listener {
 			fwm.addEffect(RandomFireworkEffect.randomFireworkEffect());
 
 			fw.setFireworkMeta(fwm);
-		}
+		});
 
-		for (Player p : Bukkit.getServer().getOnlinePlayers()) {
-			p.setHealth(p.getMaxHealth());
-			p.setFoodLevel(20);
-			PlayerUtils.clearPlayerInventory(p);
-			PlayerUtils.resetPlayerXP(p);
-			p.setGameMode(GameMode.SPECTATOR);
-			VersionIndependantUtils.get().playSound(p, p.getLocation(), VersionIndependantSound.WITHER_DEATH, 1F, 1F);
-		}
+		Bukkit.getServer().getOnlinePlayers().forEach(player -> {
+			player.setHealth(player.getMaxHealth());
+			player.setFoodLevel(20);
+			PlayerUtils.clearPlayerInventory(player);
+			PlayerUtils.resetPlayerXP(player);
+			player.setGameMode(GameMode.SPECTATOR);
+			VersionIndependantUtils.get().playSound(player, player.getLocation(), VersionIndependantSound.WITHER_DEATH, 1F, 1F);
+		});
+
+		Task.tryStopTask(actionbarTask);
 
 		ended = true;
 	}
@@ -296,11 +341,85 @@ public class TNTRun extends MapGame implements Listener {
 	}
 
 	@EventHandler(priority = EventPriority.NORMAL)
+	public void onPlayerToggleFlight(PlayerToggleFlightEvent event) {
+		Player player = event.getPlayer();
+		if (player.getGameMode() == GameMode.ADVENTURE || player.getGameMode() == GameMode.SURVIVAL) {
+			player.setFlying(false);
+			if (!doubleJumpInProgress.contains(player.getUniqueId())) {
+				boolean allow = false;
+				if (started) {
+					if (doubleJumpCharges.containsKey(player.getUniqueId())) {
+						DoubleJumpCharges charges = doubleJumpCharges.get(player.getUniqueId());
+						if (charges.hasCharges()) {
+							charges.decrement();
+							allow = true;
+						}
+					}
+				} else {
+					allow = true;
+				}
+
+				if (allow) {
+					player.setVelocity(player.getLocation().getDirection().multiply(DOUBLE_JUMP_POWER).setY(DOUBLE_JUMP_Y));
+					player.playSound(player.getLocation(), Sound.GHAST_FIREBALL, 1F, 1F);
+					Location pLocation = player.getLocation();
+					pLocation.add(0.0, 1.5, 0.0);
+					for (int i = 0; i <= 2; i++) {
+						player.getWorld().playEffect(pLocation.clone().add(0, -1, 0), Effect.SMOKE, i);
+					}
+				}
+			}
+			player.setAllowFlight(false);
+			event.setCancelled(true);
+		}
+	}
+
+	@EventHandler(priority = EventPriority.NORMAL)
+	public void onPlayerMove(PlayerMoveEvent event) {
+		Player player = event.getPlayer();
+		if (player.getGameMode() == GameMode.ADVENTURE || player.getGameMode() == GameMode.SURVIVAL) {
+			if (!player.getAllowFlight()) {
+				Location loc = player.getLocation();
+				Block block = loc.getBlock().getRelative(BlockFace.DOWN);
+				if (block.getType() != Material.AIR && block.getType().isSolid()) {
+					if (!doubleJumpInProgress.contains(player.getUniqueId())) {
+						boolean allow = false;
+
+						if (started) {
+							if (doubleJumpCharges.containsKey(player.getUniqueId())) {
+								DoubleJumpCharges charges = doubleJumpCharges.get(player.getUniqueId());
+								if (charges.hasCharges()) {
+									allow = true;
+								}
+							}
+						} else {
+							allow = true;
+						}
+
+						if (allow) {
+							player.setAllowFlight(true);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	@EventHandler
+	public void onPlayerQuit(PlayerQuitEvent e) {
+		if (doubleJumpInProgress.contains(e.getPlayer().getUniqueId())) {
+			doubleJumpInProgress.remove(e.getPlayer().getUniqueId());
+		}
+	}
+
+	@EventHandler(priority = EventPriority.NORMAL)
 	public void onPlayerJoin(PlayerJoinEvent e) {
 		if (hasStarted()) {
 			if (!players.contains(e.getPlayer().getUniqueId())) {
 				tpToSpectator(e.getPlayer());
 			}
+		} else {
+			e.getPlayer().sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + "You can practise double jumping while you wait for the game to start");
 		}
 	}
 
@@ -345,7 +464,7 @@ public class TNTRun extends MapGame implements Listener {
 			}
 		}
 	}
-	
+
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
 	public void onBlockBreak(BlockBreakEvent e) {
 		if (hasStarted()) {
