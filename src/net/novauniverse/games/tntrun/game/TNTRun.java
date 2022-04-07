@@ -67,10 +67,13 @@ public class TNTRun extends MapGame implements Listener {
 	private TNTRunMapModule config;
 
 	private Task gameLoop;
+	private Task moveCheckTask;
 
 	private List<UUID> doubleJumpInProgress;
 
 	private Map<UUID, DoubleJumpCharges> doubleJumpCharges;
+
+	private Map<UUID, PlayerStandingStillCheck> playerMovementCheck;
 
 	private Task actionbarTask;
 
@@ -80,7 +83,15 @@ public class TNTRun extends MapGame implements Listener {
 		this.ended = false;
 		this.config = null;
 		this.doubleJumpInProgress = new ArrayList<UUID>();
-		this.doubleJumpCharges = new HashMap<>();
+		this.doubleJumpCharges = new HashMap<UUID, DoubleJumpCharges>();
+		this.playerMovementCheck = new HashMap<UUID, PlayerStandingStillCheck>();
+
+		this.moveCheckTask = new SimpleTask(NovaTNTRun.getInstance(), new Runnable() {
+			@Override
+			public void run() {
+				playerMovementCheck.values().forEach(o -> o.decrement());
+			}
+		}, 1L);
 
 		this.actionbarTask = new SimpleTask(NovaTNTRun.getInstance(), new Runnable() {
 			@Override
@@ -96,6 +107,13 @@ public class TNTRun extends MapGame implements Listener {
 				});
 			}
 		}, 10L);
+	}
+
+	public boolean isStandingStill(Player player) {
+		if (playerMovementCheck.containsKey(player.getUniqueId())) {
+			return playerMovementCheck.get(player.getUniqueId()).isExpired();
+		}
+		return false;
 	}
 
 	public TNTRunMapModule getConfig() {
@@ -179,7 +197,7 @@ public class TNTRun extends MapGame implements Listener {
 		player.teleport(location);
 
 		doubleJumpCharges.put(player.getUniqueId(), new DoubleJumpCharges(DOUBLE_JUMP_CHARGES));
-		
+
 		new BukkitRunnable() {
 			@Override
 			public void run() {
@@ -266,6 +284,7 @@ public class TNTRun extends MapGame implements Listener {
 		gameLoop.start();
 
 		Task.tryStartTask(actionbarTask);
+		Task.tryStartTask(moveCheckTask);
 
 		this.sendBeginEvent();
 	}
@@ -298,6 +317,7 @@ public class TNTRun extends MapGame implements Listener {
 		});
 
 		Task.tryStopTask(actionbarTask);
+		Task.tryStopTask(moveCheckTask);
 
 		ended = true;
 	}
@@ -410,16 +430,30 @@ public class TNTRun extends MapGame implements Listener {
 		if (doubleJumpInProgress.contains(e.getPlayer().getUniqueId())) {
 			doubleJumpInProgress.remove(e.getPlayer().getUniqueId());
 		}
+
+		if (playerMovementCheck.containsKey(e.getPlayer().getUniqueId())) {
+			this.playerMovementCheck.remove(e.getPlayer().getUniqueId());
+		}
 	}
 
 	@EventHandler(priority = EventPriority.NORMAL)
 	public void onPlayerJoin(PlayerJoinEvent e) {
+		playerMovementCheck.put(e.getPlayer().getUniqueId(), new PlayerStandingStillCheck());
 		if (hasStarted()) {
 			if (!players.contains(e.getPlayer().getUniqueId())) {
 				tpToSpectator(e.getPlayer());
 			}
 		} else {
 			e.getPlayer().sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + "You can practise double jumping while you wait for the game to start");
+		}
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onPlayerMoveMonitor(PlayerMoveEvent e) {
+		if (e.getFrom().getBlockX() != e.getTo().getBlockX() || e.getFrom().getBlockZ() != e.getTo().getBlockZ()) {
+			if (playerMovementCheck.containsKey(e.getPlayer().getUniqueId())) {
+				playerMovementCheck.get(e.getPlayer().getUniqueId()).reset();
+			}
 		}
 	}
 

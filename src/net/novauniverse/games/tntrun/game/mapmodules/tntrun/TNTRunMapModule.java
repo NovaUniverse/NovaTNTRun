@@ -97,7 +97,7 @@ public class TNTRunMapModule extends MapModule {
 		});
 		checkTrigger.addFlag(TriggerFlag.STOP_ON_GAME_END);
 		checkTrigger.addFlag(TriggerFlag.DISABLE_LOGGING);
-		
+
 		beginTrigger = new DelayedGameTrigger("novauniverse.tntrun.start_decay", beginAfter * 20L, new TriggerCallback() {
 			@Override
 			public void run(GameTrigger trigger2, TriggerFlag reason) {
@@ -110,7 +110,7 @@ public class TNTRunMapModule extends MapModule {
 		beginTrigger.addFlag(TriggerFlag.RUN_ONLY_ONCE);
 	}
 
-	private final double RELATIVE_BLOCK_THRESHOLD = 0.321;
+	private final double RELATIVE_BLOCK_THRESHOLD = 0.2;
 	private final double RELATIVE_BLOCK_THRESHOLD_MIN = RELATIVE_BLOCK_THRESHOLD;
 	private final double RELATIVE_BLOCK_THRESHOLD_MAX = 1 - RELATIVE_BLOCK_THRESHOLD; // 729
 
@@ -150,9 +150,19 @@ public class TNTRunMapModule extends MapModule {
 			}
 
 			Location floor = player.getLocation().clone().add(0, -1, 0);
-
+			
 			if (!this.isFloor(floor)) {
 				floor = floor.add(0, -1, 0);
+			}
+			
+			if (NovaTNTRun.getInstance().getGame().isStandingStill(player)) {
+				// Big decay if player is not moving
+				for (int x = -1; x <= 1; x++) {
+					for (int z = -1; z <= 1; z++) {
+						this.tryDecay(floor.clone().add(x, 0, z));
+					}
+				}
+				return;
 			}
 
 			this.tryDecay(floor);
