@@ -110,7 +110,7 @@ public class TNTRunMapModule extends MapModule {
 		beginTrigger.addFlag(TriggerFlag.RUN_ONLY_ONCE);
 	}
 
-	private final double RELATIVE_BLOCK_THRESHOLD = 0.2;
+	private final double RELATIVE_BLOCK_THRESHOLD = 0.321;
 	private final double RELATIVE_BLOCK_THRESHOLD_MIN = RELATIVE_BLOCK_THRESHOLD;
 	private final double RELATIVE_BLOCK_THRESHOLD_MAX = 1 - RELATIVE_BLOCK_THRESHOLD; // 729
 
