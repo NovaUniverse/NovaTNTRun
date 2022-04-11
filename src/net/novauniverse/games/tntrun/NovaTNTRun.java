@@ -19,12 +19,12 @@ import net.novauniverse.games.tntrun.game.mapmodules.tntrun.TNTRunMapModule;
 import net.zeeraa.novacore.commons.log.Log;
 import net.zeeraa.novacore.commons.utils.JSONFileUtils;
 import net.zeeraa.novacore.spigot.abstraction.events.VersionIndependantPlayerAchievementAwardedEvent;
+import net.zeeraa.novacore.spigot.gameengine.module.modules.game.GameManager;
+import net.zeeraa.novacore.spigot.gameengine.module.modules.game.map.mapmodule.MapModuleManager;
+import net.zeeraa.novacore.spigot.gameengine.module.modules.game.mapselector.selectors.guivoteselector.GUIMapVote;
+import net.zeeraa.novacore.spigot.gameengine.module.modules.gamelobby.GameLobby;
 import net.zeeraa.novacore.spigot.language.LanguageReader;
 import net.zeeraa.novacore.spigot.module.ModuleManager;
-import net.zeeraa.novacore.spigot.module.modules.game.GameManager;
-import net.zeeraa.novacore.spigot.module.modules.game.map.mapmodule.MapModuleManager;
-import net.zeeraa.novacore.spigot.module.modules.game.mapselector.selectors.guivoteselector.GUIMapVote;
-import net.zeeraa.novacore.spigot.module.modules.gamelobby.GameLobby;
 
 public class NovaTNTRun extends JavaPlugin implements Listener {
 	private static NovaTNTRun instance;
@@ -123,7 +123,7 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 
 		// Read maps
 		Log.info(getName(), "Loading maps from " + mapFolder.getPath());
-		GameManager.getInstance().getMapReader().loadAll(mapFolder, worldFolder);
+		GameManager.getInstance().loadMaps(mapFolder, worldFolder);
 	}
 
 	@Override

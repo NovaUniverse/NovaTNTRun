@@ -20,15 +20,15 @@ import net.novauniverse.games.tntrun.game.mapmodules.tntrun.material.ColoredDeca
 import net.novauniverse.games.tntrun.game.mapmodules.tntrun.material.IDecayMaterial;
 import net.novauniverse.games.tntrun.game.mapmodules.tntrun.material.NormalDecayMaterial;
 import net.zeeraa.novacore.spigot.abstraction.enums.ColoredBlockType;
+import net.zeeraa.novacore.spigot.gameengine.module.modules.game.Game;
+import net.zeeraa.novacore.spigot.gameengine.module.modules.game.GameManager;
+import net.zeeraa.novacore.spigot.gameengine.module.modules.game.map.mapmodule.MapModule;
+import net.zeeraa.novacore.spigot.gameengine.module.modules.game.triggers.DelayedGameTrigger;
+import net.zeeraa.novacore.spigot.gameengine.module.modules.game.triggers.GameTrigger;
+import net.zeeraa.novacore.spigot.gameengine.module.modules.game.triggers.RepeatingGameTrigger;
+import net.zeeraa.novacore.spigot.gameengine.module.modules.game.triggers.TriggerCallback;
+import net.zeeraa.novacore.spigot.gameengine.module.modules.game.triggers.TriggerFlag;
 import net.zeeraa.novacore.spigot.language.LanguageManager;
-import net.zeeraa.novacore.spigot.module.modules.game.Game;
-import net.zeeraa.novacore.spigot.module.modules.game.GameManager;
-import net.zeeraa.novacore.spigot.module.modules.game.map.mapmodule.MapModule;
-import net.zeeraa.novacore.spigot.module.modules.game.triggers.DelayedGameTrigger;
-import net.zeeraa.novacore.spigot.module.modules.game.triggers.GameTrigger;
-import net.zeeraa.novacore.spigot.module.modules.game.triggers.RepeatingGameTrigger;
-import net.zeeraa.novacore.spigot.module.modules.game.triggers.TriggerCallback;
-import net.zeeraa.novacore.spigot.module.modules.game.triggers.TriggerFlag;
 import net.zeeraa.novacore.spigot.utils.LocationUtils;
 import net.zeeraa.novacore.spigot.utils.VectorArea;
 
@@ -232,10 +232,5 @@ public class TNTRunMapModule extends MapModule {
 				LanguageManager.broadcast("nova.tntrun.decay_starts_in", beginAfter);
 			}
 		}.runTaskLater(NovaTNTRun.getInstance(), 1L);
-	}
-
-	@Override
-	public void onGameEnd(Game game) {
-
 	}
 }

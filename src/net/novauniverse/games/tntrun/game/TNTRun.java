@@ -48,9 +48,9 @@ import net.zeeraa.novacore.commons.tasks.Task;
 import net.zeeraa.novacore.spigot.NovaCore;
 import net.zeeraa.novacore.spigot.abstraction.VersionIndependantUtils;
 import net.zeeraa.novacore.spigot.abstraction.enums.VersionIndependantSound;
-import net.zeeraa.novacore.spigot.module.modules.game.GameEndReason;
-import net.zeeraa.novacore.spigot.module.modules.game.MapGame;
-import net.zeeraa.novacore.spigot.module.modules.game.elimination.PlayerQuitEliminationAction;
+import net.zeeraa.novacore.spigot.gameengine.module.modules.game.GameEndReason;
+import net.zeeraa.novacore.spigot.gameengine.module.modules.game.MapGame;
+import net.zeeraa.novacore.spigot.gameengine.module.modules.game.elimination.PlayerQuitEliminationAction;
 import net.zeeraa.novacore.spigot.tasks.SimpleTask;
 import net.zeeraa.novacore.spigot.utils.PlayerUtils;
 import net.zeeraa.novacore.spigot.utils.RandomFireworkEffect;
@@ -101,7 +101,7 @@ public class TNTRun extends MapGame implements Listener {
 						if (doubleJumpCharges.containsKey(player.getUniqueId())) {
 							DoubleJumpCharges charges = doubleJumpCharges.get(player.getUniqueId());
 							String message = ChatColor.GOLD + "" + ChatColor.BOLD + "Double jump charges: " + (charges.hasCharges() ? ChatColor.AQUA : ChatColor.RED) + ChatColor.BOLD + charges.getCharges();
-							NovaCore.getInstance().getActionBar().sendMessage(player, message);
+							VersionIndependantUtils.get().sendActionBarMessage(player, message);
 						}
 					}
 				});
