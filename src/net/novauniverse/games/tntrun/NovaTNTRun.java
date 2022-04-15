@@ -14,11 +14,13 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import net.novauniverse.games.tntrun.commands.AggressiveDecayCommand;
 import net.novauniverse.games.tntrun.game.TNTRun;
 import net.novauniverse.games.tntrun.game.mapmodules.tntrun.TNTRunMapModule;
 import net.zeeraa.novacore.commons.log.Log;
 import net.zeeraa.novacore.commons.utils.JSONFileUtils;
 import net.zeeraa.novacore.spigot.abstraction.events.VersionIndependantPlayerAchievementAwardedEvent;
+import net.zeeraa.novacore.spigot.command.CommandRegistry;
 import net.zeeraa.novacore.spigot.gameengine.module.modules.game.GameManager;
 import net.zeeraa.novacore.spigot.gameengine.module.modules.game.map.mapmodule.MapModuleManager;
 import net.zeeraa.novacore.spigot.gameengine.module.modules.game.mapselector.selectors.guivoteselector.GUIMapVote;
@@ -28,6 +30,16 @@ import net.zeeraa.novacore.spigot.module.ModuleManager;
 
 public class NovaTNTRun extends JavaPlugin implements Listener {
 	private static NovaTNTRun instance;
+
+	private boolean aggressiveDecay;
+
+	public boolean isAggressiveDecay() {
+		return aggressiveDecay;
+	}
+
+	public void setAggressiveDecay(boolean aggressiveDecay) {
+		this.aggressiveDecay = aggressiveDecay;
+	}
 
 	public static NovaTNTRun getInstance() {
 		return instance;
@@ -55,6 +67,8 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 		NovaTNTRun.instance = this;
 
 		this.saveDefaultConfig();
+
+		this.aggressiveDecay = this.getConfig().getBoolean("aggressive_decay");
 
 		Log.info(getName(), "Loading language files...");
 		try {
@@ -124,6 +138,9 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 		// Read maps
 		Log.info(getName(), "Loading maps from " + mapFolder.getPath());
 		GameManager.getInstance().readMapsFromFolder(mapFolder, worldFolder);
+
+		// Register commands
+		CommandRegistry.registerCommand(new AggressiveDecayCommand());
 	}
 
 	@Override
@@ -131,7 +148,7 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 		Bukkit.getScheduler().cancelTasks(this);
 		HandlerList.unregisterAll((Plugin) this);
 	}
-	
+
 	@EventHandler(priority = EventPriority.NORMAL)
 	public void onVersionIndependantPlayerAchievementAwarded(VersionIndependantPlayerAchievementAwardedEvent e) {
 		e.setCancelled(true);

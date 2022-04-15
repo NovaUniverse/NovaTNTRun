@@ -151,10 +151,14 @@ public class TNTRunMapModule extends MapModule {
 
 			Location floor = player.getLocation().clone().add(0, -1, 0);
 			
-			if (!this.isFloor(floor)) {
-				floor = floor.add(0, -1, 0);
+			if(NovaTNTRun.getInstance().isAggressiveDecay()) {
+				if (!this.isFloor(floor)) { floor = floor.add(0, -1, 0); }
+			} else {
+				if (player.getLocation().getY() - player.getLocation().getBlockY() > 0.2) {
+					return;
+				}
 			}
-			
+
 			if (NovaTNTRun.getInstance().getGame().isStandingStill(player)) {
 				// Big decay if player is not moving
 				for (int x = -1; x <= 1; x++) {
