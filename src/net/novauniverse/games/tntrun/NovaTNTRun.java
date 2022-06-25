@@ -15,6 +15,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import net.novauniverse.games.tntrun.commands.AggressiveDecayCommand;
+import net.novauniverse.games.tntrun.commands.StartDecayCommand;
 import net.novauniverse.games.tntrun.game.TNTRun;
 import net.novauniverse.games.tntrun.game.mapmodules.tntrun.TNTRunMapModule;
 import net.zeeraa.novacore.commons.log.Log;
@@ -32,6 +33,8 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 	private static NovaTNTRun instance;
 
 	private boolean aggressiveDecay;
+
+	private boolean autoStartDecay;
 
 	public boolean isAggressiveDecay() {
 		return aggressiveDecay;
@@ -62,6 +65,10 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 		return game;
 	}
 
+	public boolean isAutoStartDecay() {
+		return autoStartDecay;
+	}
+
 	@Override
 	public void onEnable() {
 		NovaTNTRun.instance = this;
@@ -69,6 +76,7 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 		this.saveDefaultConfig();
 
 		this.aggressiveDecay = this.getConfig().getBoolean("aggressive_decay");
+		this.autoStartDecay = this.getConfig().getBoolean("auto_start_decay");
 
 		Log.info(getName(), "Loading language files...");
 		try {
@@ -141,6 +149,7 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 
 		// Register commands
 		CommandRegistry.registerCommand(new AggressiveDecayCommand());
+		CommandRegistry.registerCommand(new StartDecayCommand());
 	}
 
 	@Override

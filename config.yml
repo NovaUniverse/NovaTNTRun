@@ -3,3 +3,5 @@ allow_reconnect: true
 player_elimination_delay: 180
 
 aggressive_decay: true
+
+auto_start_decay: true

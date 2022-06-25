@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.DyeColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -46,12 +47,16 @@ public class TNTRunMapModule extends MapModule {
 	private RepeatingGameTrigger decayTrigger;
 	private RepeatingGameTrigger checkTrigger;
 
+	private boolean decayStarted;
+
 	public TNTRunMapModule(JSONObject json) {
 		super(json);
 
 		this.floors = new ArrayList<>();
 		this.decaySteps = new ArrayList<>();
 		this.decayingBlocks = new HashMap<>();
+
+		this.decayStarted = false;
 
 		ticksBetweenDecay = json.getInt("ticks_between_decay");
 		ticksBetweenCheck = json.getInt("ticks_between_check");
@@ -150,9 +155,11 @@ public class TNTRunMapModule extends MapModule {
 			}
 
 			Location floor = player.getLocation().clone().add(0, -1, 0);
-			
-			if(NovaTNTRun.getInstance().isAggressiveDecay()) {
-				if (!this.isFloor(floor)) { floor = floor.add(0, -1, 0); }
+
+			if (NovaTNTRun.getInstance().isAggressiveDecay()) {
+				if (!this.isFloor(floor)) {
+					floor = floor.add(0, -1, 0);
+				}
 			} else {
 				if (player.getLocation().getY() - player.getLocation().getBlockY() > 0.2) {
 					return;
@@ -224,6 +231,21 @@ public class TNTRunMapModule extends MapModule {
 
 	@Override
 	public void onGameStart(Game game) {
+		if (NovaTNTRun.getInstance().isAutoStartDecay()) {
+			startDecay();
+		} else {
+			Bukkit.getServer().broadcastMessage(ChatColor.GOLD + "" + ChatColor.BOLD + "Waiting for an admin to start the decay");
+		}
+	}
+
+	public void startDecay() {
+		if (decayStarted) {
+			return;
+		}
+		decayStarted = true;
+
+		Game game = NovaTNTRun.getInstance().getGame();
+
 		game.addTrigger(checkTrigger);
 		game.addTrigger(decayTrigger);
 		game.addTrigger(beginTrigger);

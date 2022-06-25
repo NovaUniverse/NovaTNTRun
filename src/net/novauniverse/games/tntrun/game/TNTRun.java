@@ -218,6 +218,14 @@ public class TNTRun extends MapGame implements Listener {
 		}.runTaskLater(NovaTNTRun.getInstance(), 10L);
 	}
 
+	public void tryStartDecay() {
+		if (!started) {
+			return;
+		}
+		TNTRunMapModule module = (TNTRunMapModule) this.getActiveMap().getMapData().getMapModule(TNTRunMapModule.class);
+		module.startDecay();
+	}
+
 	@Override
 	public void onStart() {
 		if (started) {
