@@ -5,3 +5,6 @@ player_elimination_delay: 180
 aggressive_decay: true
 
 auto_start_decay: true
+
+# Set to true to not play the wither death sound on end
+disable_default_end_sound: false

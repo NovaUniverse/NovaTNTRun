@@ -1,4 +1,4 @@
-package net.novauniverse.games.tntrun.game;
+package net.novauniverse.games.tntrun.game.misc;
 
 public class DoubleJumpCharges {
 	private int charges;

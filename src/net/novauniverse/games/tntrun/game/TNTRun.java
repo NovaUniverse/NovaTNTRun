@@ -43,6 +43,8 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import net.novauniverse.games.tntrun.NovaTNTRun;
 import net.novauniverse.games.tntrun.game.mapmodules.tntrun.TNTRunMapModule;
+import net.novauniverse.games.tntrun.game.misc.DoubleJumpCharges;
+import net.novauniverse.games.tntrun.game.misc.PlayerStandingStillCheck;
 import net.zeeraa.novacore.commons.log.Log;
 import net.zeeraa.novacore.commons.tasks.Task;
 import net.zeeraa.novacore.spigot.NovaCore;
@@ -321,7 +323,9 @@ public class TNTRun extends MapGame implements Listener {
 			PlayerUtils.clearPlayerInventory(player);
 			PlayerUtils.resetPlayerXP(player);
 			player.setGameMode(GameMode.SPECTATOR);
-			VersionIndependentUtils.get().playSound(player, player.getLocation(), VersionIndependentSound.WITHER_DEATH, 1F, 1F);
+			if (!NovaTNTRun.getInstance().isDisableDefaultEndSound()) {
+				VersionIndependentUtils.get().playSound(player, player.getLocation(), VersionIndependentSound.WITHER_DEATH, 1F, 1F);
+			}
 		});
 
 		Task.tryStopTask(actionbarTask);

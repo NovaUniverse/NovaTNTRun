@@ -50,6 +50,8 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 
 	private boolean allowReconnect;
 	private int reconnectTime;
+	
+	private boolean disableDefaultEndSound;
 
 	private TNTRun game;
 
@@ -69,6 +71,14 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 		return autoStartDecay;
 	}
 
+	public boolean isDisableDefaultEndSound() {
+		return disableDefaultEndSound;
+	}
+	
+	public void setDisableDefaultEndSound(boolean disableDefaultEndSound) {
+		this.disableDefaultEndSound = disableDefaultEndSound;
+	}
+
 	@Override
 	public void onEnable() {
 		NovaTNTRun.instance = this;
@@ -77,6 +87,8 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 
 		this.aggressiveDecay = this.getConfig().getBoolean("aggressive_decay");
 		this.autoStartDecay = this.getConfig().getBoolean("auto_start_decay");
+		
+		disableDefaultEndSound = getConfig().getBoolean("disable_default_end_sound");
 
 		Log.info(getName(), "Loading language files...");
 		try {

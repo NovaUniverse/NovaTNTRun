@@ -1,4 +1,4 @@
-package net.novauniverse.games.tntrun.game;
+package net.novauniverse.games.tntrun.game.misc;
 
 public class PlayerStandingStillCheck {
 	public static final int DEFAULT_VALUE = 40;
