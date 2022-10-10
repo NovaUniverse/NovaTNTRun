@@ -62,9 +62,9 @@ public class TNTRun extends MapGame implements Listener {
 	private boolean ended;
 
 	public static final double DOUBLE_JUMP_POWER = 1.0D;
-	public static final double DOUBLE_JUMP_Y = 0.75D;
+	public static final double DOUBLE_JUMP_Y = 1.25D;
 
-	public static final int DOUBLE_JUMP_CHARGES = 3;
+	public static final int DOUBLE_JUMP_CHARGES = 5;
 
 	private TNTRunMapModule config;
 
