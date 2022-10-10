@@ -112,7 +112,7 @@
 	<repositories>
 		<repository>
             <id>novauniverse2</id>
-            <url>https://nexus2.novauniverse.net/repository/novauniverse/</url>
+            <url>https://nexus2.novauniverse.net/repository/everything/</url>
         </repository>
 	</repositories>
 
