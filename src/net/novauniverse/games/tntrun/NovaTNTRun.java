@@ -51,7 +51,7 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 
 	private boolean allowReconnect;
 	private int reconnectTime;
-	
+
 	private boolean disableDefaultEndSound;
 
 	private TNTRun game;
@@ -75,7 +75,7 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 	public boolean isDisableDefaultEndSound() {
 		return disableDefaultEndSound;
 	}
-	
+
 	public void setDisableDefaultEndSound(boolean disableDefaultEndSound) {
 		this.disableDefaultEndSound = disableDefaultEndSound;
 	}
@@ -88,7 +88,7 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 
 		this.aggressiveDecay = this.getConfig().getBoolean("aggressive_decay");
 		this.autoStartDecay = this.getConfig().getBoolean("auto_start_decay");
-		
+
 		disableDefaultEndSound = getConfig().getBoolean("disable_default_end_sound");
 
 		Log.info(getName(), "Loading language files...");
@@ -104,12 +104,10 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 		// Create files and folders
 		File mapFolder = new File(this.getDataFolder().getPath() + File.separator + "Maps");
 		File worldFolder = new File(this.getDataFolder().getPath() + File.separator + "Worlds");
-		
-
 
 		if (NovaCoreGameEngine.getInstance().getRequestedGameDataDirectory() != null) {
-			mapFolder = new File(NovaCoreGameEngine.getInstance().getRequestedGameDataDirectory().getAbsolutePath() + File.separator + getName() + File.separator + "Maps");
-			worldFolder = new File(NovaCoreGameEngine.getInstance().getRequestedGameDataDirectory().getAbsolutePath() + File.separator + getName() + File.separator + "Worlds");
+			mapFolder = new File(NovaCoreGameEngine.getInstance().getRequestedGameDataDirectory().getAbsolutePath() + File.separator + "TNTRun" + File.separator + "Maps");
+			worldFolder = new File(NovaCoreGameEngine.getInstance().getRequestedGameDataDirectory().getAbsolutePath() + File.separator + "TNTRun" + File.separator + "Worlds");
 		}
 
 		File mapOverrides = new File(this.getDataFolder().getPath() + File.separator + "map_overrides.json");
