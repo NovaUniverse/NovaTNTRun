@@ -4,3 +4,5 @@ description: Novauniverse TNTRun
 version: 1.0
 depend: [NovaCore, NovaCoreGameEngine]
 softdepend: [NovaGamesTarget]
+
+authors: [Zeeraa, NovaUniverse]
