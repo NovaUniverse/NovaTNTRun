@@ -2,6 +2,7 @@ package net.novauniverse.games.tntrun;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
@@ -18,6 +19,9 @@ import net.novauniverse.games.tntrun.commands.AggressiveDecayCommand;
 import net.novauniverse.games.tntrun.commands.StartDecayCommand;
 import net.novauniverse.games.tntrun.game.TNTRun;
 import net.novauniverse.games.tntrun.game.mapmodules.tntrun.TNTRunMapModule;
+import net.novauniverse.games.tntrun.game.mapmodules.tntrun.giveprojectiles.TNTRunGiveProjectiles;
+import net.novauniverse.games.tntrun.modules.snowballvote.SnowballVoteSelectorItem;
+import net.novauniverse.games.tntrun.modules.snowballvote.TNTRunSnowballVoteManager;
 import net.zeeraa.novacore.commons.log.Log;
 import net.zeeraa.novacore.commons.utils.JSONFileUtils;
 import net.zeeraa.novacore.spigot.abstraction.events.VersionIndependentPlayerAchievementAwardedEvent;
@@ -29,13 +33,20 @@ import net.zeeraa.novacore.spigot.gameengine.module.modules.game.mapselector.sel
 import net.zeeraa.novacore.spigot.gameengine.module.modules.gamelobby.GameLobby;
 import net.zeeraa.novacore.spigot.language.LanguageReader;
 import net.zeeraa.novacore.spigot.module.ModuleManager;
+import net.zeeraa.novacore.spigot.module.modules.customitems.CustomItemManager;
+import net.zeeraa.novacore.spigot.module.modules.gui.GUIManager;
 
 public class NovaTNTRun extends JavaPlugin implements Listener {
 	private static NovaTNTRun instance;
 
 	private boolean aggressiveDecay;
-
 	private boolean autoStartDecay;
+	private boolean snowballVotingEnabled;
+	private boolean allowReconnect;
+	private int reconnectTime;
+	private boolean disableDefaultEndSound;
+
+	private TNTRun game;
 
 	public boolean isAggressiveDecay() {
 		return aggressiveDecay;
@@ -49,12 +60,9 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 		return instance;
 	}
 
-	private boolean allowReconnect;
-	private int reconnectTime;
-
-	private boolean disableDefaultEndSound;
-
-	private TNTRun game;
+	public boolean isSnowballVotingEnabled() {
+		return snowballVotingEnabled;
+	}
 
 	public boolean isAllowReconnect() {
 		return allowReconnect;
@@ -85,6 +93,8 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 		NovaTNTRun.instance = this;
 
 		this.saveDefaultConfig();
+
+		snowballVotingEnabled = false;
 
 		this.aggressiveDecay = this.getConfig().getBoolean("aggressive_decay");
 		this.autoStartDecay = this.getConfig().getBoolean("auto_start_decay");
@@ -141,12 +151,30 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 			return;
 		}
 
-		// Register map modules
-		MapModuleManager.addMapModule("tntrun.tntrun", TNTRunMapModule.class);
+		// Load modules
+		ModuleManager.loadModule(this, TNTRunSnowballVoteManager.class, false);
 
 		// Enable required modules
 		ModuleManager.enable(GameManager.class);
 		ModuleManager.enable(GameLobby.class);
+		ModuleManager.enable(GUIManager.class);
+		ModuleManager.enable(CustomItemManager.class);
+
+		// Custom items
+		try {
+			CustomItemManager.getInstance().addCustomItem(SnowballVoteSelectorItem.class);
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+			e.printStackTrace();
+		}
+
+		// Register map modules
+		MapModuleManager.addMapModule("tntrun.tntrun", TNTRunMapModule.class);
+		MapModuleManager.addMapModule("tntrun.add_projectiles", TNTRunGiveProjectiles.class);
+
+		if (getConfig().getBoolean("snowball_voting")) {
+			ModuleManager.enable(TNTRunSnowballVoteManager.class);
+			snowballVotingEnabled = true;
+		}
 
 		// Init game and maps
 		this.game = new TNTRun();
