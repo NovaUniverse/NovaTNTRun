@@ -10,3 +10,6 @@ auto_start_decay: true
 disable_default_end_sound: false
 
 snowball_voting: true
+
+# This wont affect anything if snowball voting is enabled
+give_snowballs: true

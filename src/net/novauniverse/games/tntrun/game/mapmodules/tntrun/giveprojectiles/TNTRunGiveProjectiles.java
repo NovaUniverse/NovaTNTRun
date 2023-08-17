@@ -70,6 +70,10 @@ public class TNTRunGiveProjectiles extends MapModule {
 							return;
 						}
 					}
+				} else {
+					if(!NovaTNTRun.getInstance().isShouldGiveSnowballs()) {
+						return;
+					}
 				}
 
 				GameManager.getInstance().getActiveGame().getPlayers().forEach(uuid -> PlayerUtils.ifOnline(uuid, (player) -> {
