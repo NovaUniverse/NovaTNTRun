@@ -62,7 +62,7 @@ public class TNTRunSnowballVoteManager extends NovaModule implements Listener {
 	}
 
 	@EventHandler(priority = EventPriority.NORMAL)
-	public void onPlayerJoinGameLobby(GameStartEvent e) {
+	public void GameStart(GameStartEvent e) {
 		int yesVotes = (int) votes.stream().filter(v -> v.isWantSnowballs()).count();
 		int noVotes = (int) votes.stream().filter(v -> !v.isWantSnowballs()).count();
 
