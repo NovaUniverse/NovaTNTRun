@@ -4,8 +4,14 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 
+import net.novauniverse.games.tntrun.game.misc.DoubleJumpCharges;
+import net.zeeraa.novacore.spigot.module.modules.cooldown.CooldownManager;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.Effect;
+import org.bukkit.Location;
+import org.bukkit.Sound;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
@@ -91,6 +97,17 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 
 	public boolean isShouldGiveSnowballs() {
 		return shouldGiveSnowballs;
+	}
+
+	public void doubleJump(Player player) {
+			player.setVelocity(player.getLocation().getDirection().multiply(TNTRun.DOUBLE_JUMP_POWER).setY(TNTRun.DOUBLE_JUMP_Y));
+			player.playSound(player.getLocation(), Sound.GHAST_FIREBALL, 1F, 1F);
+			Location pLocation = player.getLocation();
+			pLocation.add(0.0, 1.5, 0.0);
+			for (int i = 0; i <= 2; i++) {
+				player.getWorld().playEffect(pLocation.clone().add(0, -1, 0), Effect.SMOKE, i);
+			}
+			CooldownManager.get().set(player, TNTRun.DOUBLE_JUMP_COOLDOWN_ID, TNTRun.DOUBLE_JUMP_COOLDOWN);
 	}
 
 	@Override
