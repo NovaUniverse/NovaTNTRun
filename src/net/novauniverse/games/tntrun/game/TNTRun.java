@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import net.zeeraa.novacore.spigot.module.modules.cooldown.Cooldown;
+import net.zeeraa.novacore.spigot.module.modules.cooldown.CooldownManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
@@ -34,11 +36,13 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleFlightEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -71,12 +75,15 @@ public class TNTRun extends MapGame implements Listener {
 
 	public static final int DOUBLE_JUMP_CHARGES = 5;
 
+	public static final int DOUBLE_JUMP_COOLDOWN = 15;
+
+	public static final String DOUBLE_JUMP_COOLDOWN_ID = "DOUBLE_JUMP_COOLDOWN";
+
 	private TNTRunMapModule config;
 
-	private Task gameLoop;
 	private Task moveCheckTask;
 
-	private List<UUID> doubleJumpInProgress;
+	private ItemStack doubleJumpItem;
 
 	private Map<UUID, DoubleJumpCharges> doubleJumpCharges;
 
@@ -89,31 +96,21 @@ public class TNTRun extends MapGame implements Listener {
 		this.started = false;
 		this.ended = false;
 		this.config = null;
-		this.doubleJumpInProgress = new ArrayList<UUID>();
-		this.doubleJumpCharges = new HashMap<UUID, DoubleJumpCharges>();
-		this.playerMovementCheck = new HashMap<UUID, PlayerStandingStillCheck>();
+		this.doubleJumpCharges = new HashMap<>();
+		this.playerMovementCheck = new HashMap<>();
+		this.doubleJumpItem = new ItemBuilder(Material.FEATHER).setName(ChatColor.GREEN + "Click to Double Jump").build();
 
-		this.moveCheckTask = new SimpleTask(NovaTNTRun.getInstance(), new Runnable() {
-			@Override
-			public void run() {
-				playerMovementCheck.values().forEach(o -> o.decrement());
-			}
-		}, 1L);
+		this.moveCheckTask = new SimpleTask(NovaTNTRun.getInstance(), () -> playerMovementCheck.values().forEach(PlayerStandingStillCheck::decrement), 1L);
 
-		this.actionbarTask = new SimpleTask(NovaTNTRun.getInstance(), new Runnable() {
-			@Override
-			public void run() {
-				Bukkit.getServer().getOnlinePlayers().forEach(player -> {
-					if (players.contains(player.getUniqueId())) {
-						if (doubleJumpCharges.containsKey(player.getUniqueId())) {
-							DoubleJumpCharges charges = doubleJumpCharges.get(player.getUniqueId());
-							String message = ChatColor.GOLD + "" + ChatColor.BOLD + "Double jump charges: " + (charges.hasCharges() ? ChatColor.AQUA : ChatColor.RED) + ChatColor.BOLD + charges.getCharges();
-							VersionIndependentUtils.get().sendActionBarMessage(player, message);
-						}
-					}
-				});
-			}
-		}, 10L);
+		this.actionbarTask = new SimpleTask(NovaTNTRun.getInstance(), () -> Bukkit.getServer().getOnlinePlayers().forEach(player -> {
+            if (players.contains(player.getUniqueId())) {
+                if (doubleJumpCharges.containsKey(player.getUniqueId())) {
+                    DoubleJumpCharges charges = doubleJumpCharges.get(player.getUniqueId());
+                    String message = ChatColor.GOLD + "" + ChatColor.BOLD + "Double jump charges: " + (charges.hasCharges() ? ChatColor.AQUA : ChatColor.RED) + ChatColor.BOLD + charges.getCharges();
+                    VersionIndependentUtils.get().sendActionBarMessage(player, message);
+                }
+            }
+        }), 10L);
 	}
 
 	public boolean isStandingStill(Player player) {
@@ -181,6 +178,7 @@ public class TNTRun extends MapGame implements Listener {
 		NovaCore.getInstance().getVersionIndependentUtils().resetEntityMaxHealth(player);
 		player.setHealth(20);
 		player.setGameMode(GameMode.SPECTATOR);
+		player.getInventory().clear();
 		if (hasActiveMap()) {
 			player.teleport(getActiveMap().getSpectatorLocation());
 		}
@@ -241,7 +239,7 @@ public class TNTRun extends MapGame implements Listener {
 		if (!started) {
 			return;
 		}
-		TNTRunMapModule module = (TNTRunMapModule) this.getActiveMap().getMapData().getMapModule(TNTRunMapModule.class);
+		TNTRunMapModule module = this.getActiveMap().getMapData().getMapModule(TNTRunMapModule.class);
 		module.startDecay();
 	}
 
@@ -254,7 +252,7 @@ public class TNTRun extends MapGame implements Listener {
 
 		world.setDifficulty(Difficulty.PEACEFUL);
 
-		TNTRunMapModule cfg = (TNTRunMapModule) this.getActiveMap().getMapData().getMapModule(TNTRunMapModule.class);
+		TNTRunMapModule cfg = this.getActiveMap().getMapData().getMapModule(TNTRunMapModule.class);
 		if (cfg == null) {
 			Log.fatal("TNTRun", "The map " + this.getActiveMap().getMapData().getMapName() + " has no tntrun config map module");
 			Bukkit.getServer().broadcastMessage(ChatColor.RED + "TNTRun has run into an uncorrectable error and has to be ended");
@@ -263,7 +261,7 @@ public class TNTRun extends MapGame implements Listener {
 		}
 		this.config = cfg;
 
-		List<Player> toTeleport = new ArrayList<Player>();
+		List<Player> toTeleport = new ArrayList<>();
 
 		Bukkit.getServer().getOnlinePlayers().forEach(player -> {
 			if (players.contains(player.getUniqueId())) {
@@ -275,40 +273,31 @@ public class TNTRun extends MapGame implements Listener {
 
 		Collections.shuffle(toTeleport, getRandom());
 
-		List<Location> toUse = new ArrayList<Location>();
-		while (toTeleport.size() > 0) {
-			if (toUse.size() == 0) {
+		List<Location> toUse = new ArrayList<>();
+		while (!toTeleport.isEmpty()) {
+			if (toUse.isEmpty()) {
 				for (Location location : getActiveMap().getStarterLocations()) {
 					toUse.add(location);
 				}
-
 				Collections.shuffle(toUse, getRandom());
 			}
 
-			if (toUse.size() == 0) {
+			if (toUse.isEmpty()) {
 				// Could not load spawn locations. break out to prevent server from crashing
 				Log.fatal("TNTRun", "The map " + this.getActiveMap().getMapData().getMapName() + " has no spawn locations. Ending game to prevent crash");
 				Bukkit.getServer().broadcastMessage(ChatColor.RED + "TNTRun has run into an uncorrectable error and has to be ended");
 				this.endGame(GameEndReason.ERROR);
 				return;
 			}
-
 			tpToArena(toTeleport.remove(0), toUse.remove(0));
 		}
 
 		// Disable drops
 		this.getActiveMap().getWorld().setGameRuleValue("doTileDrops", "false");
 
-		gameLoop = new SimpleTask(new Runnable() {
-			@Override
-			public void run() {
-				Bukkit.getServer().getOnlinePlayers().forEach(player -> {
-					player.setFoodLevel(20);
-					player.setSaturation(20);
-				});
-			}
-		}, 20L);
-		gameLoop.start();
+		// Peaceful Mode prevents hunger
+		this.getActiveMap().getWorld().setDifficulty(Difficulty.PEACEFUL);
+
 
 		Task.tryStartTask(actionbarTask);
 		Task.tryStartTask(moveCheckTask);
@@ -321,8 +310,6 @@ public class TNTRun extends MapGame implements Listener {
 		if (ended) {
 			return;
 		}
-
-		Task.tryStopTask(gameLoop);
 
 		getActiveMap().getStarterLocations().forEach(location -> {
 			Firework fw = (Firework) location.getWorld().spawnEntity(location, EntityType.FIREWORK);
@@ -355,7 +342,7 @@ public class TNTRun extends MapGame implements Listener {
 	public void onEntityDamageByEntity(EntityDamageByEntityEvent e) {
 		if (e.getEntity() instanceof Player) {
 
-			if (e.getDamager().getType() == EntityType.SNOWBALL || e.getEntityType() == EntityType.EGG) {
+			if (e.getDamager().getType() == EntityType.SNOWBALL || e.getDamager().getType() == EntityType.EGG) {
 				return;
 			}
 		}
@@ -394,7 +381,7 @@ public class TNTRun extends MapGame implements Listener {
 		Player player = event.getPlayer();
 		if (player.getGameMode() == GameMode.ADVENTURE || player.getGameMode() == GameMode.SURVIVAL) {
 			player.setFlying(false);
-			if (!doubleJumpInProgress.contains(player.getUniqueId())) {
+			if (!CooldownManager.get().isActive(player.getUniqueId(), DOUBLE_JUMP_COOLDOWN_ID)) {
 				boolean allow = false;
 				if (started) {
 					if (doubleJumpCharges.containsKey(player.getUniqueId())) {
@@ -405,17 +392,11 @@ public class TNTRun extends MapGame implements Listener {
 						}
 					}
 				} else {
+					// allow double jumping in lobby
 					allow = true;
 				}
-
 				if (allow) {
-					player.setVelocity(player.getLocation().getDirection().multiply(DOUBLE_JUMP_POWER).setY(DOUBLE_JUMP_Y));
-					player.playSound(player.getLocation(), Sound.GHAST_FIREBALL, 1F, 1F);
-					Location pLocation = player.getLocation();
-					pLocation.add(0.0, 1.5, 0.0);
-					for (int i = 0; i <= 2; i++) {
-						player.getWorld().playEffect(pLocation.clone().add(0, -1, 0), Effect.SMOKE, i);
-					}
+					NovaTNTRun.getInstance().doubleJump(player);
 				}
 			}
 			player.setAllowFlight(false);
@@ -431,7 +412,7 @@ public class TNTRun extends MapGame implements Listener {
 				Location loc = player.getLocation();
 				Block block = loc.getBlock().getRelative(BlockFace.DOWN);
 				if (block.getType() != Material.AIR && block.getType().isSolid()) {
-					if (!doubleJumpInProgress.contains(player.getUniqueId())) {
+					if (!CooldownManager.get().isActive(player.getUniqueId(), DOUBLE_JUMP_COOLDOWN_ID)) {
 						boolean allow = false;
 
 						if (started) {
@@ -456,10 +437,6 @@ public class TNTRun extends MapGame implements Listener {
 
 	@EventHandler
 	public void onPlayerQuit(PlayerQuitEvent e) {
-		if (doubleJumpInProgress.contains(e.getPlayer().getUniqueId())) {
-			doubleJumpInProgress.remove(e.getPlayer().getUniqueId());
-		}
-
 		if (playerMovementCheck.containsKey(e.getPlayer().getUniqueId())) {
 			this.playerMovementCheck.remove(e.getPlayer().getUniqueId());
 		}
@@ -471,8 +448,13 @@ public class TNTRun extends MapGame implements Listener {
 		if (hasStarted()) {
 			if (!players.contains(e.getPlayer().getUniqueId())) {
 				tpToSpectator(e.getPlayer());
+			} else {
+				CooldownManager.get().setupPlayer(e.getPlayer());
+				e.getPlayer().getInventory().setItem(0, doubleJumpItem);
 			}
 		} else {
+			CooldownManager.get().setupPlayer(e.getPlayer());
+			e.getPlayer().getInventory().setItem(0, doubleJumpItem);
 			e.getPlayer().sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + "You can practise double jumping while you wait for the game to start");
 		}
 	}
@@ -533,6 +515,33 @@ public class TNTRun extends MapGame implements Listener {
 		if (hasStarted()) {
 			if (e.getPlayer().getGameMode() != GameMode.CREATIVE) {
 				e.setCancelled(true);
+			}
+		}
+	}
+	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+	public void onInteract(PlayerInteractEvent e) {
+		if (hasStarted()) {
+			if (e.getPlayer().getGameMode() != GameMode.CREATIVE) {
+				if (e.getItem().isSimilar(doubleJumpItem)) {
+					if (!CooldownManager.get().isActive(e.getPlayer().getUniqueId(), DOUBLE_JUMP_COOLDOWN_ID)) {
+						boolean allow = false;
+						if (started) {
+							if (doubleJumpCharges.containsKey(e.getPlayer().getUniqueId())) {
+								DoubleJumpCharges charges = doubleJumpCharges.get(e.getPlayer().getUniqueId());
+								if (charges.hasCharges()) {
+									charges.decrement();
+									allow = true;
+								}
+							}
+						} else {
+							// allow double jumping in lobby
+							allow = true;
+						}
+						if (allow) {
+							NovaTNTRun.getInstance().doubleJump(e.getPlayer());
+						}
+					}
+				}
 			}
 		}
 	}
