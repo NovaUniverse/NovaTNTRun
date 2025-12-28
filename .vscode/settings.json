@@ -1,3 +1,5 @@
 {
-    "xml.downloadExternalResources.enabled": true
+    "xml.downloadExternalResources.enabled": true,
+    "java.format.settings.url": ".vscode/java-formatter.xml",
+    "java.format.settings.profile": "NoWrap"
 }

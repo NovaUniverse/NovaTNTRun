@@ -7,17 +7,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import net.zeeraa.novacore.spigot.module.modules.cooldown.Cooldown;
 import net.zeeraa.novacore.spigot.module.modules.cooldown.CooldownManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.Difficulty;
-import org.bukkit.Effect;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.EntityType;

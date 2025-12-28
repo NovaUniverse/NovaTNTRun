@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 
-import net.novauniverse.games.tntrun.game.misc.DoubleJumpCharges;
 import net.zeeraa.novacore.spigot.module.modules.cooldown.CooldownManager;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
@@ -52,6 +51,7 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 	private int reconnectTime;
 	private boolean disableDefaultEndSound;
 	private boolean shouldGiveSnowballs;
+	private Sound doubleJumpSound;
 
 	private TNTRun game;
 
@@ -100,14 +100,16 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 	}
 
 	public void doubleJump(Player player) {
-			player.setVelocity(player.getLocation().getDirection().multiply(TNTRun.DOUBLE_JUMP_POWER).setY(TNTRun.DOUBLE_JUMP_Y));
-			player.playSound(player.getLocation(), Sound.GHAST_FIREBALL, 1F, 1F);
-			Location pLocation = player.getLocation();
-			pLocation.add(0.0, 1.5, 0.0);
-			for (int i = 0; i <= 2; i++) {
-				player.getWorld().playEffect(pLocation.clone().add(0, -1, 0), Effect.SMOKE, i);
-			}
-			CooldownManager.get().set(player, TNTRun.DOUBLE_JUMP_COOLDOWN_ID, TNTRun.DOUBLE_JUMP_COOLDOWN);
+		player.setVelocity(player.getLocation().getDirection().multiply(TNTRun.DOUBLE_JUMP_POWER).setY(TNTRun.DOUBLE_JUMP_Y));
+		if (doubleJumpSound == null) {
+			player.playSound(player.getLocation(), doubleJumpSound, 1F, 1F);
+		}
+		Location pLocation = player.getLocation();
+		pLocation.add(0.0, 1.5, 0.0);
+		for (int i = 0; i <= 2; i++) {
+			player.getWorld().playEffect(pLocation.clone().add(0, -1, 0), Effect.SMOKE, i);
+		}
+		CooldownManager.get().set(player, TNTRun.DOUBLE_JUMP_COOLDOWN_ID, TNTRun.DOUBLE_JUMP_COOLDOWN);
 	}
 
 	@Override
@@ -117,6 +119,20 @@ public class NovaTNTRun extends JavaPlugin implements Listener {
 		this.saveDefaultConfig();
 
 		snowballVotingEnabled = false;
+
+		String[] doubleJumpSounds = new String[]{"GHAST_FIREBALL", "ENTITY_PHANTOM_FLAP"};
+		for (String soundName : doubleJumpSounds) {
+			try {
+				doubleJumpSound = Sound.valueOf(soundName);
+				Log.info(getName(), "Using " + soundName + " as double jump sound");
+				break;
+			} catch (IllegalArgumentException e) {
+				Log.warn(getName(), "Sound " + soundName + " not found, trying next...");
+			}
+		}
+		if (doubleJumpSound == null) {
+			Log.error(getName(), "No suitable sound found for double jump effect!");
+		}
 
 		this.aggressiveDecay = this.getConfig().getBoolean("aggressive_decay");
 		this.autoStartDecay = this.getConfig().getBoolean("auto_start_decay");
